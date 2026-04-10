@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Initialize auth state
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -21,7 +20,10 @@ export const AuthProvider = ({ children }) => {
           setProfile(userProfile)
         }
       } catch (err) {
-        setError(err.message)
+        // Don't set error for missing session - it's normal
+        if (err.message !== 'Auth session missing!') {
+          setError(err.message)
+        }
       } finally {
         setLoading(false)
       }
@@ -39,6 +41,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setProfile(null)
         }
+        setLoading(false)
       }
     )
 

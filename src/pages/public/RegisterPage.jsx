@@ -19,11 +19,18 @@ const RegisterPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Prevent double submission
+    if (isSubmitting) return
+    setIsSubmitting(true)
 
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match')
+      setIsSubmitting(false)
       return
     }
 
@@ -35,6 +42,8 @@ const RegisterPage = () => {
       toast.error('Registration failed')
     } finally {
       setLoading(false)
+      // Re-enable after a delay
+      setTimeout(() => setIsSubmitting(false), 3000)
     }
   }
 
