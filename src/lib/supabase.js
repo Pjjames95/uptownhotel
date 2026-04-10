@@ -8,8 +8,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseUrl || 'VITE_SUPABASE_URL',
+  supabaseAnonKey || 'VITE_SUPABASE_ANON_KEY'
 )
 
 // Helper functions with error handling
