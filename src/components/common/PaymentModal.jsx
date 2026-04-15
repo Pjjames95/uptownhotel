@@ -42,32 +42,16 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
       attempts++
       
       try {
-        console.log(`🔄 Polling attempt ${attempts} for:`, checkoutRequestId)
-        
         const status = await mpesaService.checkStatus(checkoutRequestId)
         
-        console.log(`🔄 Polling attempt ${attempts} result:`, status)
-        
-        // CHECK FOR CANCELLATION BY RESULT CODE FIRST
         const isCancelled = status.resultCode === 1032 || 
                             status.status === 'Cancelled' ||
                             (status.status === 'Failed' && status.message?.includes('Cancelled'))
         
         const isSuccess = status.resultCode === 0 || status.status === 'Success'
         
-        const isFailed = (status.resultCode === 1) || 
-                        (status.status === 'Failed' && !isCancelled)
-        
-        const isTimeout = status.resultCode === 1037 || status.status === 'Timeout'
-        
-        const isPending = status.resultCode === 4999 || status.status === 'Pending'
-        
-        console.log('📊 Status analysis:', { isSuccess, isCancelled, isFailed, isTimeout, isPending })
-        
         if (isSuccess) {
-          console.log('✅ Payment successful!')
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
+          stopPolling()
           
           if (transactionId) {
             try {
@@ -98,9 +82,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
           }, 2000)
           
         } else if (isCancelled) {
-          console.log('❌ Payment cancelled detected!')
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
+          stopPolling()
           
           if (transactionId) {
             try {
@@ -117,10 +99,8 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
           setPaymentStep('select')
           setLoading(false)
           
-        } else if (isFailed) {
-          console.log('❌ Payment failed:', status.message)
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
+        } else if (status.status === 'Failed' || status.resultCode === '1') {
+          stopPolling()
           
           if (transactionId) {
             try {
@@ -137,31 +117,8 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
           setPaymentStep('select')
           setLoading(false)
           
-        } else if (isTimeout) {
-          console.log('⏱️ Payment timeout')
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
-          
-          if (transactionId) {
-            try {
-              await mpesaService.updateTransaction(transactionId, {
-                status: 'timeout',
-                result_description: status.message
-              })
-            } catch (e) {
-              console.warn('Transaction update warning:', e)
-            }
-          }
-
-          toast.error('Payment timed out. Please try again.')
-          setPaymentStep('select')
-          setLoading(false)
-          
         } else if (attempts >= maxAttempts) {
-          console.log('⏱️ Max polling attempts reached')
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
-          
+          stopPolling()
           toast.error('Unable to confirm payment status. Please check your M-Pesa message.')
           setPaymentStep('select')
           setLoading(false)
@@ -170,8 +127,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
       } catch (error) {
         console.error('❌ Polling error:', error)
         if (attempts >= maxAttempts) {
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
+          stopPolling()
           toast.error('Unable to verify payment. Please contact support.')
           setPaymentStep('select')
           setLoading(false)
@@ -196,8 +152,6 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
     setPaymentStep('processing')
 
     try {
-      console.log('📱 Starting M-Pesa payment...')
-      
       const result = await mpesaService.stkPush(
         phoneNumber,
         booking.total_amount,
@@ -207,37 +161,16 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
         booking.guest_id
       )
 
-      console.log('📱 STK Push FULL result:', JSON.stringify(result, null, 2))
-      console.log('📱 result.success =', result.success, 'type:', typeof result.success)
-      console.log('📱 result.checkoutRequestId =', result.checkoutRequestId)
-
-      // Check for success in multiple ways
-      const isSuccessful = result.success === true || 
-                          result.success === 'true' || 
-                          result.ResponseCode === '0' ||
-                          result.ResponseCode === 0 ||
-                          (result.checkoutRequestId && result.checkoutRequestId.startsWith('ws_CO_'))
-
-      console.log('📱 isSuccessful =', isSuccessful)
-
-      if (isSuccessful && result.checkoutRequestId) {
-        console.log('✅ STK Push successful, starting polling...')
-        console.log('CheckoutRequestID:', result.checkoutRequestId)
-        console.log('TransactionID:', result.transactionId)
-        
+      if (result.success) {
         toast.success('Payment request sent to your phone. Please enter your M-Pesa PIN.')
-        
-        // FORCE START POLLING
         pollPaymentStatus(result.checkoutRequestId, result.transactionId)
-        
       } else {
-        console.log('❌ STK Push failed:', result.responseDescription)
         toast.error(result.responseDescription || 'Failed to initiate payment')
         setPaymentStep('select')
         setLoading(false)
       }
     } catch (error) {
-      console.error('❌ Payment error:', error)
+      console.error('Payment error:', error)
       toast.error('Payment failed: ' + error.message)
       setPaymentStep('select')
       setLoading(false)
@@ -262,10 +195,6 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
     }
   }
 
-  const handleCardPayment = () => {
-    toast.error('Card payments coming soon!')
-  }
-
   const handleCancelPayment = () => {
     stopPolling()
     setPaymentStep('select')
@@ -274,9 +203,13 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
   }
 
   return (
+    // 🔑 FIX: Added fixed inset-0 with flex centering, and proper z-index
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-6 border-b">
+      {/* 🔑 FIX: Added max-w-md and w-full to constrain width */}
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        
+        {/* Header */}
+        <div className="p-6 border-b sticky top-0 bg-white z-10">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold">
               {paymentStep === 'complete' ? 'Payment Complete' : 'Make Payment'}
@@ -287,6 +220,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
           </div>
         </div>
 
+        {/* Body */}
         <div className="p-6">
           {paymentStep === 'select' && (
             <>
@@ -388,7 +322,7 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
                 onClick={() => {
                   if (paymentMethod === 'mpesa') handleMpesaPayment()
                   else if (paymentMethod === 'cash') handleCashPayment()
-                  else if (paymentMethod === 'card') handleCardPayment()
+                  else if (paymentMethod === 'card') toast.error('Card payments coming soon!')
                 }}
                 disabled={loading}
                 className="btn btn-primary w-full disabled:opacity-50"
