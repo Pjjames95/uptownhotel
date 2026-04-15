@@ -203,187 +203,194 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
   }
 
   return (
-    // 🔑 FIX: Added fixed inset-0 with flex centering, and proper z-index
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      {/* 🔑 FIX: Added max-w-md and w-full to constrain width */}
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        
-        {/* Header */}
-        <div className="p-6 border-b sticky top-0 bg-white z-10">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">
-              {paymentStep === 'complete' ? 'Payment Complete' : 'Make Payment'}
-            </h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <XMarkIcon className="w-6 h-6" />
-            </button>
+    // 🔑 FIX: Full screen overlay with scrollable content
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50"
+      onClick={onClose}
+    >
+      <div className="min-h-screen px-4 py-8 flex items-center justify-center">
+        {/* 🔑 FIX: Scrollable modal content with max width */}
+        <div 
+          className="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[85vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b px-6 py-4 z-10">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold">
+                {paymentStep === 'complete' ? 'Payment Complete' : 'Make Payment'}
+              </h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Body */}
-        <div className="p-6">
-          {paymentStep === 'select' && (
-            <>
-              <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <p className="text-sm text-gray-600">Booking Reference</p>
-                <p className="font-mono font-semibold text-lg">{booking.booking_reference || 'N/A'}</p>
-                <p className="text-sm text-gray-600 mt-2">Amount Due</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  KES {booking.total_amount?.toLocaleString()}
-                </p>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Payment Method
-                </label>
-                
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('mpesa')}
-                  className={`w-full p-4 border-2 rounded-lg flex items-center gap-3 transition ${
-                    paymentMethod === 'mpesa' ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-300'
-                  }`}
-                >
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 text-xl">📱</span>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold">M-Pesa</p>
-                    <p className="text-sm text-gray-600">Pay via M-Pesa mobile money</p>
-                  </div>
-                  {paymentMethod === 'mpesa' && (
-                    <div className="w-4 h-4 bg-green-600 rounded-full" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`w-full p-4 border-2 rounded-lg flex items-center gap-3 transition ${
-                    paymentMethod === 'cash' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <BanknotesIcon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold">Cash</p>
-                    <p className="text-sm text-gray-600">Pay at the hotel reception</p>
-                  </div>
-                  {paymentMethod === 'cash' && (
-                    <div className="w-4 h-4 bg-blue-600 rounded-full" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`w-full p-4 border-2 rounded-lg flex items-center gap-3 transition ${
-                    paymentMethod === 'card' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'
-                  }`}
-                >
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <CreditCardIcon className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold">Credit/Debit Card</p>
-                    <p className="text-sm text-gray-600">Pay with Visa, Mastercard</p>
-                  </div>
-                  {paymentMethod === 'card' && (
-                    <div className="w-4 h-4 bg-purple-600 rounded-full" />
-                  )}
-                </button>
-              </div>
-
-              {paymentMethod === 'mpesa' && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    M-Pesa Phone Number
-                  </label>
-                  <div className="relative">
-                    <PhoneIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="e.g., 0712345678"
-                      className="input pl-10"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter the phone number registered with M-Pesa
+          {/* Scrollable Body */}
+          <div className="px-6 py-4">
+            {paymentStep === 'select' && (
+              <>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm text-gray-600">Booking Reference</p>
+                  <p className="font-mono font-semibold text-base">{booking.booking_reference || 'N/A'}</p>
+                  <p className="text-sm text-gray-600 mt-2">Amount Due</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    KES {booking.total_amount?.toLocaleString()}
                   </p>
                 </div>
-              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (paymentMethod === 'mpesa') handleMpesaPayment()
-                  else if (paymentMethod === 'cash') handleCashPayment()
-                  else if (paymentMethod === 'card') toast.error('Card payments coming soon!')
-                }}
-                disabled={loading}
-                className="btn btn-primary w-full disabled:opacity-50"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Processing...
-                  </span>
-                ) : (
-                  paymentMethod === 'mpesa' ? 'Pay with M-Pesa' :
-                  paymentMethod === 'cash' ? 'Confirm Cash Payment' :
-                  'Pay with Card'
+                <div className="space-y-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Payment Method
+                  </label>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('mpesa')}
+                    className={`w-full p-3 border-2 rounded-lg flex items-center gap-3 transition ${
+                      paymentMethod === 'mpesa' ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-300'
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-lg">📱</span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-sm">M-Pesa</p>
+                      <p className="text-xs text-gray-600">Pay via M-Pesa mobile money</p>
+                    </div>
+                    {paymentMethod === 'mpesa' && (
+                      <div className="w-3 h-3 bg-green-600 rounded-full" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`w-full p-3 border-2 rounded-lg flex items-center gap-3 transition ${
+                      paymentMethod === 'cash' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <BanknotesIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-sm">Cash</p>
+                      <p className="text-xs text-gray-600">Pay at the hotel reception</p>
+                    </div>
+                    {paymentMethod === 'cash' && (
+                      <div className="w-3 h-3 bg-blue-600 rounded-full" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('card')}
+                    className={`w-full p-3 border-2 rounded-lg flex items-center gap-3 transition ${
+                      paymentMethod === 'card' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <CreditCardIcon className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-sm">Credit/Debit Card</p>
+                      <p className="text-xs text-gray-600">Pay with Visa, Mastercard</p>
+                    </div>
+                    {paymentMethod === 'card' && (
+                      <div className="w-3 h-3 bg-purple-600 rounded-full" />
+                    )}
+                  </button>
+                </div>
+
+                {paymentMethod === 'mpesa' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      M-Pesa Phone Number
+                    </label>
+                    <div className="relative">
+                      <PhoneIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="e.g., 0712345678"
+                        className="input pl-9 text-sm py-2"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the phone number registered with M-Pesa
+                    </p>
+                  </div>
                 )}
-              </button>
-            </>
-          )}
 
-          {paymentStep === 'processing' && (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mb-4" />
-              <h4 className="text-lg font-semibold mb-2">Processing Payment</h4>
-              <p className="text-gray-600 mb-4">
-                Please check your phone and enter your M-Pesa PIN to complete the payment.
-              </p>
-              <div className="bg-yellow-50 p-4 rounded-lg mb-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> If you don't receive the prompt, ensure your phone is on and has network coverage.
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (paymentMethod === 'mpesa') handleMpesaPayment()
+                    else if (paymentMethod === 'cash') handleCashPayment()
+                    else if (paymentMethod === 'card') toast.error('Card payments coming soon!')
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary w-full disabled:opacity-50 text-sm py-2"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    paymentMethod === 'mpesa' ? 'Pay with M-Pesa' :
+                    paymentMethod === 'cash' ? 'Confirm Cash Payment' :
+                    'Pay with Card'
+                  )}
+                </button>
+              </>
+            )}
+
+            {paymentStep === 'processing' && (
+              <div className="text-center py-6">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-3" />
+                <h4 className="text-base font-semibold mb-2">Processing Payment</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Please check your phone and enter your M-Pesa PIN.
                 </p>
+                <div className="bg-yellow-50 p-3 rounded-lg mb-3">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Note:</strong> If you don't receive the prompt, ensure your phone is on.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelPayment}
+                  className="px-4 py-2 bg-red-100 text-red-800 rounded text-sm hover:bg-red-200"
+                >
+                  Cancel Payment
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleCancelPayment}
-                className="px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200"
-              >
-                Cancel Payment
-              </button>
-            </div>
-          )}
+            )}
 
-          {paymentStep === 'complete' && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+            {paymentStep === 'complete' && (
+              <div className="text-center py-6">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h4 className="text-base font-semibold mb-2">Payment Successful!</h4>
+                <p className="text-sm text-gray-600 mb-4">Your booking has been confirmed.</p>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn btn-primary text-sm py-2"
+                >
+                  Close
+                </button>
               </div>
-              <h4 className="text-lg font-semibold mb-2">Payment Successful!</h4>
-              <p className="text-gray-600">Your booking has been confirmed.</p>
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn btn-primary mt-6"
-              >
-                Close
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
