@@ -23,11 +23,11 @@ const AdminLayout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex  p-1 bg-gray-100 overflow-auto">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-scroll">
         <AdminNavbar />
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-scroll p-6">
           {children}
         </main>
       </div>

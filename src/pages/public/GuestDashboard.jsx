@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useAuthActions } from '../../hooks/useAuth'
 import PublicLayout from '../../components/public/layout/PublicLayout'
 import ProfileTab from '../../components/public/guest/ProfileTab'
 import BookingHistoryTab from '../../components/public/guest/BookingHistoryTab'
@@ -19,12 +18,18 @@ const GuestDashboard = () => {
     { id: 'reviews', label: 'My Reviews' },
   ]
 
+  // Get display name
+  const displayName = profile?.full_name || profile?.email?.split('@')[0] || 'Guest'
+
   return (
     <ProtectedRoute>
       <PublicLayout>
         <div className="min-h-screen bg-gray-50 py-12">
           <div className="container mx-auto px-4">
-            <h1 className="text-4xl font-bold mb-8">My Dashboard</h1>
+            <h1 className="text-4xl font-bold mb-2">
+              Welcome, {displayName}!
+            </h1>
+            <p className="text-gray-600 mb-8">Manage your bookings and profile</p>
 
             {/* Tabs */}
             <div className="bg-white rounded-lg shadow-md mb-6">
@@ -33,7 +38,7 @@ const GuestDashboard = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-4 font-medium transition ${
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'border-b-4 border-blue-600 text-blue-600'
                         : 'text-gray-600 hover:text-blue-600'

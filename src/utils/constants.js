@@ -17,6 +17,7 @@ export const ROOM_TYPES = {
   family: { label: 'Family', beds: 4, description: 'Perfect for families' },
   deluxe: { label: 'Deluxe', beds: 2, description: 'Premium comfort and amenities' },
   studio: { label: 'Studio', beds: 2, description: 'Open plan living space' },
+  penthouse: { label: 'Penthouse', beds: 2, description: 'Top-floor luxury with views' },
 }
 
 // Room status
@@ -86,6 +87,7 @@ export const RESERVATION_STATUS = {
 // ============================================================================
 
 // Event types
+// Event types - MUST match database enum values exactly
 export const EVENT_TYPES = {
   wedding: 'Wedding',
   conference: 'Conference',

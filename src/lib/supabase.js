@@ -7,15 +7,42 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Missing Supabase credentials. Using demo mode.')
 }
 
+// Create Supabase client with persistent session
 export const supabase = createClient(
-  supabaseUrl || 'VITE_SUPABASE_URL',
-  supabaseAnonKey || 'VITE_SUPABASE_ANON_KEY'
+  supabaseUrl,
+  supabaseAnonKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage,
+    },
+    // 🔑 Add these to prevent hanging queries
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: { 'x-application-name': 'hotelhub' },
+    },
+  }
 )
+// export const supabase = createClient(
+//   supabaseUrl || 'https://placeholder.supabase.co',
+//   supabaseAnonKey || 'placeholder-key',
+//   {
+//     auth: {
+//       persistSession: true,      // KEY FIX: Persist session across reloads
+//       autoRefreshToken: true,    // KEY FIX: Auto-refresh expired tokens
+//       detectSessionInUrl: true,  // Handle OAuth redirects
+//       storage: typeof window !== 'undefined' ? window.localStorage : null, // Store session in localStorage
+//     }
+//   }
+// )
 
 // Helper functions with error handling
 export const signUp = async (email, password, fullName, phone = null) => {
   try {
-    // Sign up the user
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -29,9 +56,6 @@ export const signUp = async (email, password, fullName, phone = null) => {
 
     if (signUpError) throw signUpError
 
-    // Note: With the trigger in place, the profile is created automatically
-    // We don't need to manually insert it anymore
-    
     return { success: true, user: authData.user }
   } catch (error) {
     console.error('Signup error:', error)
@@ -57,34 +81,19 @@ export const signIn = async (email, password) => {
 
 export const signOut = async () => {
   try {
-    console.log('Attempting to sign out...')
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
     
-    // First, clear any local storage items
-    Object.keys(localStorage).forEach(key => {
-      if (key.includes('supabase') || key.includes('auth')) {
-        localStorage.removeItem(key)
-      }
-    })
-    
-    // Sign out from Supabase with timeout
-    const signOutPromise = supabase.auth.signOut()
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Sign out timeout')), 5000)
-    )
-    
-    const { error } = await Promise.race([signOutPromise, timeoutPromise])
-    
-    if (error) {
-      console.error('Supabase signOut error:', error)
-      // Even if there's an error, we should still clear local state
+    // Clear local storage on logout
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('sb-auth-token')
+      localStorage.removeItem('sb-session')
     }
     
-    console.log('Sign out successful')
     return { success: true }
   } catch (error) {
     console.error('Signout error:', error)
-    // Even if there's an error, return success to allow UI to update
-    return { success: true }
+    return { success: false, error: error.message }
   }
 }
 
@@ -110,12 +119,24 @@ export const getUserProfile = async (userId) => {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) throw error
     return data
   } catch (error) {
     console.error('Error fetching profile:', error)
     return null
+  }
+}
+
+// Refresh session manually if needed
+export const refreshSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.refreshSession()
+    if (error) throw error
+    return { success: true, session: data.session }
+  } catch (error) {
+    console.error('Refresh session error:', error)
+    return { success: false, error: error.message }
   }
 }

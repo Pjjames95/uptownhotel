@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { signIn, signUp, signOut, supabase } from '../lib/supabase'
+import { signIn, signUp, signOut } from '../lib/supabase'
 import { useAuth as getAuthContext } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -9,30 +9,25 @@ export const useAuthActions = () => {
 
   const login = async (email, password) => {
     try {
+      console.log('📱 Login attempt:', email)
+
       const result = await signIn(email, password)
+
       if (result.success) {
         toast.success('Login successful!')
-        
-        // Fetch the user profile to determine role
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', result.user.id)
-          .single()
-        
-        // Navigate based on role
-        if (profileData?.role === 'guest' || !profileData?.role) {
-          navigate('/guest/dashboard')
-        } else {
-          navigate('/admin/dashboard')
-        }
-      } else {
-        toast.error(result.error || 'Login failed')
+
+        // IMPORTANT: no timeout navigation
+        navigate('/', { replace: true })
+
+        return result
       }
+
+      toast.error(result.error)
       return result
-    } catch (error) {
+
+    } catch (err) {
       toast.error('Login failed')
-      return { success: false, error: error.message }
+      return { success: false }
     }
   }
 
@@ -75,18 +70,9 @@ export const useAuthActions = () => {
         toast.success('Logged out successfully')
       }
       
-      // Clear any local state
-      localStorage.clear()
-      sessionStorage.clear()
-      
       // Force navigation to home
       console.log('Navigating to home...')
       navigate('/', { replace: true })
-      
-      // Force a page reload after a short delay to clear all state
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 100)
       
       return result
     } catch (error) {
@@ -95,9 +81,6 @@ export const useAuthActions = () => {
       
       // Still navigate home even if there's an error
       navigate('/', { replace: true })
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 100)
       
       return { success: true }
     }

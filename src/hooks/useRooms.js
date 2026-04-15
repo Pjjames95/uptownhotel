@@ -2,84 +2,139 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 export const useRooms = () => {
-  const [rooms, setRooms] = useState([])
+  const [roomTypes, setRoomTypes] = useState([])
+  const [floors, setFloors] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetchRooms = async () => {
+  const fetchRoomTypes = async () => {
+    const { data, error } = await supabase
+      .from('room_types')
+      .select('*')
+      .eq('is_active', true)
+      .order('name')
+    
+    if (error) throw error
+    return data || []
+  }
+
+  const fetchFloors = async () => {
+    const { data, error } = await supabase
+      .from('floors')
+      .select('*')
+      .eq('is_active', true)
+      .order('floor_number')
+    
+    if (error) throw error
+    return data || []
+  }
+
+  const fetchAvailableRooms = async (checkIn, checkOut, guests, roomTypeId, floorId) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      console.log('Fetching available rooms with params:', { checkIn, checkOut, guests, roomTypeId, floorId })
+      
+      // Get all active rooms matching filters
+      let query = supabase
+        .from('rooms')
+        .select(`
+          id,
+          room_number,
+          status,
+          room_type:room_types(*),
+          floor:floors(*)
+        `)
+        .eq('status', 'active')
+
+      if (roomTypeId) {
+        query = query.eq('room_type_id', roomTypeId)
+      }
+      if (floorId) {
+        query = query.eq('floor_id', floorId)
+      }
+
+      const { data: allRooms, error: roomsError } = await query
+      
+      if (roomsError) {
+        console.error('Rooms query error:', roomsError)
+        throw roomsError
+      }
+
+      console.log('All active rooms found:', allRooms?.length)
+
+      // Filter by capacity
+      const roomsWithCapacity = allRooms?.filter(room => 
+        room.room_type?.capacity >= guests
+      ) || []
+      
+      console.log('Rooms with sufficient capacity:', roomsWithCapacity.length)
+
+      // Check availability for each room
+      const available = []
+      for (const room of roomsWithCapacity) {
+        // Check for overlapping bookings
+        const { data: bookings, error: bookingsError } = await supabase
+          .from('room_bookings')
+          .select('id')
+          .eq('room_id', room.id)
+          .in('status', ['pending', 'confirmed', 'checked_in'])
+          .lt('check_in_date', checkOut)
+          .gt('check_out_date', checkIn)
+
+        if (bookingsError) {
+          console.error('Bookings check error:', bookingsError)
+          continue
+        }
+
+        if (!bookings || bookings.length === 0) {
+          available.push({
+            ...room,
+            price_per_night: room.room_type?.base_price || 0
+          })
+        }
+      }
+
+      console.log('Available rooms:', available.length)
+      return available
+    } catch (err) {
+      console.error('Fetch available rooms error:', err)
+      setError(err.message)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadFilters = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('is_available', true)
-
-      if (error) throw error
-      setRooms(data)
+      const [types, floorsData] = await Promise.all([
+        fetchRoomTypes(),
+        fetchFloors()
+      ])
+      setRoomTypes(types)
+      setFloors(floorsData)
+      console.log('Filters loaded:', { types: types.length, floors: floorsData.length })
     } catch (err) {
+      console.error('Load filters error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const createRoom = async (roomData) => {
-    try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .insert([roomData])
-        .select()
-
-      if (error) throw error
-      setRooms([...rooms, data[0]])
-      return { success: true }
-    } catch (err) {
-      return { success: false, error: err.message }
-    }
-  }
-
-  const updateRoom = async (roomId, updates) => {
-    try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .update(updates)
-        .eq('id', roomId)
-        .select()
-
-      if (error) throw error
-      setRooms(rooms.map(r => r.id === roomId ? data[0] : r))
-      return { success: true }
-    } catch (err) {
-      return { success: false, error: err.message }
-    }
-  }
-
-  const deleteRoom = async (roomId) => {
-    try {
-      const { error } = await supabase
-        .from('rooms')
-        .delete()
-        .eq('id', roomId)
-
-      if (error) throw error
-      setRooms(rooms.filter(r => r.id !== roomId))
-      return { success: true }
-    } catch (err) {
-      return { success: false, error: err.message }
-    }
-  }
-
   useEffect(() => {
-    fetchRooms()
+    loadFilters()
   }, [])
 
   return {
-    rooms,
+    roomTypes,
+    floors,
     loading,
     error,
-    createRoom,
-    updateRoom,
-    deleteRoom,
-    fetchRooms,
+    fetchAvailableRooms,
+    loadFilters,
   }
 }

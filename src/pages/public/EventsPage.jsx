@@ -20,6 +20,7 @@ const EventsPage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedType, setSelectedType] = useState('all')
   const [selectedMonth, setSelectedMonth] = useState('all')
+  const [packages, setPackages] = useState([])
 
   useEffect(() => {
     fetchEvents()
@@ -48,6 +49,21 @@ const EventsPage = () => {
       toast.error('Failed to load events')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPackages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('event_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order')
+      
+      if (error) throw error
+      setPackages(data || [])
+    } catch (error) {
+      console.error('Error fetching packages:', error)
     }
   }
 
@@ -215,18 +231,18 @@ const EventsPage = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Event Packages</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {eventPackages.map((pkg, index) => (
-              <div key={index} className="card text-center hover:shadow-xl transition">
-                <div className="text-4xl mb-4">{pkg.icon}</div>
+            {packages.map((pkg) => (
+              <div key={pkg.id} className="card text-center hover:shadow-xl transition">
+                <div className="text-4xl mb-4">{pkg.icon || '📅'}</div>
                 <h3 className="text-xl font-bold mb-2">{pkg.name}</h3>
                 <p className="text-gray-600 mb-4">{pkg.description}</p>
                 <ul className="text-sm text-gray-600 mb-6 space-y-1">
-                  {pkg.features.map((feature, i) => (
-                    <li key={i}>✓ {feature}</li>
-                  ))}
+                  {pkg.features?.map((feature, i) => <li key={i}>✓ {feature}</li>)}
                 </ul>
-                <p className="text-2xl font-bold text-purple-600 mb-4">{pkg.price}</p>
-                <button className="btn btn-primary w-full">Select Package</button>
+                <p className="text-2xl font-bold text-purple-600 mb-4">
+                  {pkg.price ? `From KES ${pkg.price.toLocaleString()}` : 'Contact us'}
+                </p>
+                <Link to="/contact" className="btn btn-primary w-full">Inquire Now</Link>
               </div>
             ))}
           </div>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import PublicLayout from '../../components/public/layout/PublicLayout'
+import { useContactMessages } from '../../hooks/useContactMessages'
 import { MapPinIcon, PhoneIcon, EnvelopeIcon, ClockIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
 const ContactPage = () => {
+  const { sendMessage, loading } = useContactMessages()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -11,20 +13,54 @@ const ContactPage = () => {
     subject: '',
     message: '',
   })
-  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  const validateForm = () => {
+    const newErrors = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required'
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email'
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }))
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
 
-    try {
-      // In production, send to your backend API
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting')
+      return
+    }
+
+    const result = await sendMessage({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || null,
+      subject: formData.subject || 'General Inquiry',
+      message: formData.message,
+    })
+
+    if (result.success) {
       toast.success('Message sent successfully! We will get back to you soon.')
       setFormData({
         name: '',
@@ -33,10 +69,8 @@ const ContactPage = () => {
         subject: '',
         message: '',
       })
-    } catch (error) {
+    } else {
       toast.error('Failed to send message. Please try again.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -44,12 +78,12 @@ const ContactPage = () => {
     {
       icon: MapPinIcon,
       title: 'Address',
-      lines: ['1243 Central Street', 'Uptown, Kisii', 'Kenya'],
+      lines: ['123 Central Street', 'CBD, Kisii', 'Kenya'],
     },
     {
       icon: PhoneIcon,
       title: 'Phone',
-      lines: ['+254 741 194 238', '+254 789 246 656'],
+      lines: ['+254 789 249 656', '+254 794 975 348'],
     },
     {
       icon: EnvelopeIcon,
@@ -124,82 +158,105 @@ const ContactPage = () => {
               <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Your Name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="input"
-                    required
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Your Email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="input"
-                    required
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`input ${errors.name ? 'border-red-500' : ''}`}
+                      required
+                    />
+                    {errors.name && (
+                      <p className="text-xs text-red-600 mt-1">{errors.name}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={`input ${errors.email ? 'border-red-500' : ''}`}
+                      required
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="Phone Number"
-                    value={formData.phone}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="+254..."
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      name="subject"
+                      placeholder="What is this about?"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      className="input"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message *
+                  </label>
+                  <textarea
+                    name="message"
+                    placeholder="Your message..."
+                    value={formData.message}
                     onChange={handleChange}
-                    className="input"
-                  />
-                  <input
-                    type="text"
-                    name="subject"
-                    placeholder="Subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="input"
+                    className={`input ${errors.message ? 'border-red-500' : ''}`}
+                    rows={6}
                     required
                   />
+                  {errors.message && (
+                    <p className="text-xs text-red-600 mt-1">{errors.message}</p>
+                  )}
                 </div>
-                <textarea
-                  name="message"
-                  placeholder="Your Message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  className="input"
-                  rows={6}
-                  required
-                />
                 <button
                   type="submit"
                   disabled={loading}
                   className="btn btn-primary w-full disabled:opacity-50"
                 >
-                  {loading ? 'Sending...' : 'Send Message'}
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send Message'
+                  )}
                 </button>
               </form>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
-          <div className="max-w-3xl mx-auto space-y-4">
-            {[
-              { q: 'What time is check-in and check-out?', a: 'Check-in is from 2:00 PM and check-out is by 11:00 AM.' },
-              { q: 'Do you offer airport shuttle service?', a: 'Yes, we offer 24/7 airport shuttle service at an additional fee.' },
-              { q: 'Is parking available?', a: 'Yes, we offer free secure parking for all our guests.' },
-              { q: 'What is your cancellation policy?', a: 'Free cancellation up to 48 hours before arrival.' },
-            ].map((faq, index) => (
-              <div key={index} className="card">
-                <h3 className="font-semibold text-lg mb-2">{faq.q}</h3>
-                <p className="text-gray-600">{faq.a}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

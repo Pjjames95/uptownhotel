@@ -28,6 +28,24 @@ export const formatDateInput = (date) => {
   return format(new Date(date), 'yyyy-MM-dd')
 }
 
+export const formatTimeDisplay = (time) => {
+  if (!time) return ''
+  
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  
+  return `${hour12}:${minutes} ${ampm}`
+}
+
+// Format time range (e.g., "2:00 PM - 4:00 PM")
+export const formatTimeRange = (startTime, endTime) => {
+  if (!startTime) return ''
+  if (!endTime) return formatTimeDisplay(startTime)
+  return `${formatTimeDisplay(startTime)} - ${formatTimeDisplay(endTime)}`
+}
+
 // Format date and time
 export const formatDateTime = (date) => {
   if (!date) return ''

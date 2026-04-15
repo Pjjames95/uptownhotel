@@ -8,6 +8,12 @@ import {
   UsersIcon,
   ChartBarIcon,
   CogIcon,
+  PhotoIcon,
+  SparklesIcon,
+  EnvelopeIcon,
+  BuildingOfficeIcon,
+  TagIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 
 const AdminSidebar = () => {
@@ -15,12 +21,18 @@ const AdminSidebar = () => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: HomeIcon },
-    { name: 'Rooms', path: '/admin/rooms', icon: BuildingLibraryIcon },
+    { name: 'Room Types', path: '/admin/room-types', icon: TagIcon },
+    { name: 'Rooms Inventory', path: '/admin/rooms-inventory', icon: BuildingOfficeIcon },
     { name: 'Bookings', path: '/admin/bookings', icon: CalendarIcon },
+    { name: 'Table Reservations', path: '/admin/table-reservations', icon: CalendarIcon },
     { name: 'Menu', path: '/admin/menu', icon: ListBulletIcon },
     { name: 'Events', path: '/admin/events', icon: CalendarIcon },
+    { name: 'Floors', path: '/admin/floors', icon: BuildingLibraryIcon },
+    { name: 'Seasonal Pricing', path: '/admin/seasonal-pricing', icon: CurrencyDollarIcon },
+    { name: 'Events Bookings', path: '/admin/event-bookings', icon: SparklesIcon},
     { name: 'Staff', path: '/admin/staff', icon: UsersIcon },
     { name: 'Reports', path: '/admin/reports', icon: ChartBarIcon },
+    { name: 'Messages', path: '/admin/messages', icon: EnvelopeIcon },
     { name: 'Settings', path: '/admin/settings', icon: CogIcon },
   ]
 

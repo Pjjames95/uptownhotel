@@ -6,8 +6,8 @@ import toast from 'react-hot-toast'
 const ImageUploader = ({ 
   onUpload, 
   existingImage = null, 
-  bucket = 'menu-images',
-  folder = 'items',
+  bucket = 'room-images',
+  folder = 'rooms',
   className = '' 
 }) => {
   const [uploading, setUploading] = useState(false)
@@ -36,14 +36,12 @@ const ImageUploader = ({
     setProgress(0)
 
     try {
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => setPreview(e.target.result)
-      reader.readAsDataURL(file)
-
       // Generate unique filename
       const fileExt = file.name.split('.').pop()
       const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`
+
+      console.log('Uploading to bucket:', bucket)
+      console.log('File path:', fileName)
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -53,16 +51,32 @@ const ImageUploader = ({
           upsert: false,
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Upload error:', error)
+        throw error
+      }
+
+      console.log('Upload successful:', data)
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
         .getPublicUrl(fileName)
 
+      console.log('Public URL generated:', publicUrl)
+
+      // Create preview
+      setPreview(publicUrl)
       setProgress(100)
       toast.success('Image uploaded successfully')
+      
+      // IMPORTANT: Pass the URL back to parent
       onUpload(publicUrl)
+      
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } catch (error) {
       console.error('Upload error:', error)
       toast.error('Failed to upload image: ' + error.message)
@@ -96,7 +110,11 @@ const ImageUploader = ({
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-48 object-cover rounded-lg border"
+            className="w-full h-32 object-cover rounded-lg border"
+            onError={(e) => {
+              console.error('Preview image failed to load:', preview)
+              e.target.src = 'https://via.placeholder.com/150?text=Error'
+            }}
           />
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
             <button
@@ -120,27 +138,26 @@ const ImageUploader = ({
       ) : (
         <div
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition ${
+          className={`border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition ${
             uploading ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
-          <PhotoIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">
-            {uploading ? 'Uploading...' : 'Click to upload image'}
+          <PhotoIcon className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+          <p className="text-sm text-gray-600">
+            {uploading ? 'Uploading...' : 'Click to upload'}
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            JPEG, PNG, WebP up to 5MB
+          <p className="text-xs text-gray-500 mt-1">
+            JPEG, PNG, WebP (max 5MB)
           </p>
           
           {uploading && progress > 0 && (
-            <div className="mt-4">
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="mt-3">
+              <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-600 transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-sm text-gray-600 mt-1">{progress}%</p>
             </div>
           )}
         </div>

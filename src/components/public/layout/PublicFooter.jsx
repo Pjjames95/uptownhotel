@@ -61,7 +61,7 @@ const PublicFooter = () => {
 
         {/* Copyright */}
         <div className="flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
-          <p>&copy; 2024 UptownHotel. All rights reserved.</p>
+          <p>&copy; 2026 UptownHotel. All rights reserved.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <a href="#" className="hover:text-white transition">Facebook</a>
             <a href="#" className="hover:text-white transition">Twitter</a>
