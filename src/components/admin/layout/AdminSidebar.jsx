@@ -34,8 +34,8 @@ const AdminSidebar = () => {
     { name: 'Reports', path: '/admin/reports', icon: ChartBarIcon },
     { name: 'Messages', path: '/admin/messages', icon: EnvelopeIcon },
     { name: 'Settings', path: '/admin/settings', icon: CogIcon },
-  ]
-
+    { name: 'Gallery', path: '/admin/gallery', icon: PhotoIcon },
+]
   return (
     <aside className="w-64 bg-gray-900 text-white">
       <div className="p-6 border-b border-gray-800">
