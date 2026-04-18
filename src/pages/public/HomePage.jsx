@@ -143,7 +143,7 @@ const HomePage = () => {
       {/* Room Types Preview */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center mb-4">Our Room Types</h2>
+          <h2 className="text-4xl font-bold text-center mb-4">Our Room Types. PRICES ARE FOR TEST PURPOSES.</h2>
           <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
             Choose from our selection of comfortable and well-appointed rooms
           </p>
